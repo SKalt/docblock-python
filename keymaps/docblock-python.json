@@ -1,5 +1,5 @@
 {
-  "atom-workspace": {
+  "atom-text-editor[data-grammar*='python']": {
     "ctrl-alt-d": "docblock-python:generate_docblock"
   }
 }
