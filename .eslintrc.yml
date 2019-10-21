@@ -1,4 +1,5 @@
-extends: google
+extends:
+  - plugin:prettier/recommended
 env:
   browser: true
   commonjs: true
@@ -8,23 +9,3 @@ env:
 parserOptions:
   ecmaVersion: 9
   sourceType: module
-rules:
-  camelcase:
-    - 0
-  indent:
-    - error
-    - 2
-  linebreak-style:
-    - error
-    - unix
-  quotes:
-    - error
-    - single
-  semi:
-    - error
-    - always
-  padding-line-between-statements:
-    - error
-    - blankLine: always
-      prev: block-like
-      next: block-like

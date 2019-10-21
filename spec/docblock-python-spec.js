@@ -1,6 +1,6 @@
-'use babel';
+"use babel";
 
-import complex_doc from './fixtures/test2_documented.js';
+import complex_doc from "./fixtures/test2_documented.js";
 
 let getAllText = function(editor) {
   editor.moveToTop();
@@ -14,15 +14,15 @@ let getAllText = function(editor) {
 let LinterJustSayNoProvider = [];
 console.log(LinterJustSayNoProvider);
 
-describe('DocblockPython', () => {
+describe("DocblockPython", () => {
   let workspaceElement;
   let activationPromise;
   let editor;
 
   beforeEach(() => {
     workspaceElement = atom.views.getView(atom.workspace);
-    activationPromise = atom.packages.activatePackage('docblock-python');
-    filePromise = atom.workspace.open('test.py');
+    activationPromise = atom.packages.activatePackage("docblock-python");
+    filePromise = atom.workspace.open("test.py");
 
     waitsForPromise(() => {
       return filePromise;
@@ -33,19 +33,21 @@ describe('DocblockPython', () => {
     });
 
     waitsForPromise(() => {
-      return atom.packages.activatePackage('language-python')
-        || atom.packages.activatePackage('MagicPython');
+      return (
+        atom.packages.activatePackage("language-python") ||
+        atom.packages.activatePackage("MagicPython")
+      );
     });
   });
 
-  describe('when we click in a line with a function definition', () => {
-    it('inserts the docblock with default settings', () => {
+  describe("when we click in a line with a function definition", () => {
+    it("inserts the docblock with default settings", () => {
       runs(() => {
         let pos;
 
         jasmine.attachToDOM(workspaceElement);
         editor = atom.workspace.getActiveTextEditor();
-        expect(editor.getPath()).toContain('test.py');
+        expect(editor.getPath()).toContain("test.py");
 
         editor.moveToBottom();
         pos = editor.getCursorBufferPosition();
@@ -57,10 +59,12 @@ describe('DocblockPython', () => {
         editor.moveToEndOfLine();
         editor.selectToBufferPosition(pos);
         let query = editor.getSelectedText();
-        expect(query).toBe('def function(parameter1, parameter2):');
+        expect(query).toBe("def function(parameter1, parameter2):");
 
-        atom.commands.dispatch(workspaceElement,
-          'docblock-python:generate_docblock');
+        atom.commands.dispatch(
+          workspaceElement,
+          "docblock-python:generate_docblock"
+        );
 
         editor.moveToBottom();
         pos = editor.getCursorBufferPosition();
@@ -77,74 +81,76 @@ describe('DocblockPython', () => {
 
         expect(query.trim().slice(0, 3)).toBe('"""');
         expect(query.trim().slice(-3)).toBe('"""');
-        expect(query).toContain('parameter1 : type');
-        expect(query).toContain('parameter2 : type');
+        expect(query).toContain("parameter1 : type");
+        expect(query).toContain("parameter2 : type");
       });
     }),
+      it("inserts the docblock without return description", () => {
+        runs(() => {
+          jasmine.attachToDOM(workspaceElement);
+          editor = atom.workspace.getActiveTextEditor();
+          atom.config.set("docblock-python.returns", false);
+          let returns = atom.config.get("docblock-python.returns");
+          expect(returns).toBe(false);
 
-    it('inserts the docblock without return description', () => {
-      runs(() => {
-        jasmine.attachToDOM(workspaceElement);
-        editor = atom.workspace.getActiveTextEditor();
-        atom.config.set('docblock-python.returns', false);
-        let returns = atom.config.get('docblock-python.returns');
-        expect(returns).toBe(false);
+          atom.commands.dispatch(
+            workspaceElement,
+            "docblock-python:generate_docblock"
+          );
 
-        atom.commands.dispatch(workspaceElement,
-          'docblock-python:generate_docblock');
+          editor.moveToBottom();
+          pos = editor.getCursorBufferPosition();
+          expect(pos.row).toBe(12);
+        });
+      }),
+      it("inserts the docblock with numpy style", () => {
+        runs(() => {
+          jasmine.attachToDOM(workspaceElement);
+          editor = atom.workspace.getActiveTextEditor();
+          atom.config.set("docblock-python.style", "numpy");
+          let style = atom.config.get("docblock-python.style");
+          expect(style).toBe("numpy");
 
-        editor.moveToBottom();
-        pos = editor.getCursorBufferPosition();
-        expect(pos.row).toBe(12);
+          atom.commands.dispatch(
+            workspaceElement,
+            "docblock-python:generate_docblock"
+          );
+
+          let query = getAllText(editor);
+
+          expect(query).toContain("Parameters\n");
+        });
+      }),
+      it("inserts the docblock with google style", () => {
+        runs(() => {
+          jasmine.attachToDOM(workspaceElement);
+          editor = atom.workspace.getActiveTextEditor();
+          atom.config.set("docblock-python.style", "google");
+          let style = atom.config.get("docblock-python.style");
+          expect(style).toBe("google");
+
+          atom.commands.dispatch(
+            workspaceElement,
+            "docblock-python:generate_docblock"
+          );
+
+          let query = getAllText(editor);
+
+          expect(query).toContain("Args:");
+        });
       });
-    }),
-
-    it('inserts the docblock with numpy style', () => {
-      runs(() => {
-        jasmine.attachToDOM(workspaceElement);
-        editor = atom.workspace.getActiveTextEditor();
-        atom.config.set('docblock-python.style', 'numpy');
-        let style = atom.config.get('docblock-python.style');
-        expect(style).toBe('numpy');
-
-        atom.commands.dispatch(workspaceElement,
-          'docblock-python:generate_docblock');
-
-        let query = getAllText(editor);
-
-        expect(query).toContain('Parameters\n');
-      });
-    }),
-
-    it('inserts the docblock with google style', () => {
-      runs(() => {
-        jasmine.attachToDOM(workspaceElement);
-        editor = atom.workspace.getActiveTextEditor();
-        atom.config.set('docblock-python.style', 'google');
-        let style = atom.config.get('docblock-python.style');
-        expect(style).toBe('google');
-
-        atom.commands.dispatch(workspaceElement,
-          'docblock-python:generate_docblock');
-
-        let query = getAllText(editor);
-
-        expect(query).toContain('Args:');
-      });
-    },
-    );
   });
 });
 
-describe('DocblockPython2', () => {
+describe("DocblockPython2", () => {
   let workspaceElement;
   let activationPromise;
   let editor;
 
   beforeEach(() => {
     workspaceElement = atom.views.getView(atom.workspace);
-    activationPromise = atom.packages.activatePackage('docblock-python');
-    filePromise = atom.workspace.open('test2.py');
+    activationPromise = atom.packages.activatePackage("docblock-python");
+    filePromise = atom.workspace.open("test2.py");
 
     waitsForPromise(() => {
       return filePromise;
@@ -155,39 +161,43 @@ describe('DocblockPython2', () => {
     });
 
     waitsForPromise(() => {
-      return atom.packages.activatePackage('language-python') ||
-      atom.packages.activatePackage('MagicPython');
+      return (
+        atom.packages.activatePackage("language-python") ||
+        atom.packages.activatePackage("MagicPython")
+      );
     });
   });
 
-  describe('when we click in a line with a function definition', () => {
-    it('inserts the docblock in complex class', () => {
+  describe("when we click in a line with a function definition", () => {
+    it("inserts the docblock in complex class", () => {
       runs(() => {
         editor = atom.workspace.getActiveTextEditor();
 
-        let style = atom.config.get('docblock-python.style');
-        expect(style).toBe('numpy');
+        let style = atom.config.get("docblock-python.style");
+        expect(style).toBe("numpy");
 
-        atom.config.set('docblock-python.use_defaults', true);
-        expect(atom.config.get('docblock-python.use_defaults')).toBe(true);
+        atom.config.set("docblock-python.use_defaults", true);
+        expect(atom.config.get("docblock-python.use_defaults")).toBe(true);
 
-        let g_python = atom.grammars.grammarForId('source.python');
-        expect(g_python.name).toBe('Python');
+        let g_python = atom.grammars.grammarForId("source.python");
+        expect(g_python.name).toBe("Python");
 
-        expect(editor.getPath()).toContain('test2.py');
+        expect(editor.getPath()).toContain("test2.py");
 
         for (let i = 1; i <= 14; i++) {
-          editor.addCursorAtBufferPosition({row: i, column: 0});
-        };
+          editor.addCursorAtBufferPosition({ row: i, column: 0 });
+        }
         expect(editor.getCursorBufferPositions().length).toBe(15);
         workspaceElement = atom.views.getView(atom.workspace);
 
         editor.setGrammar(g_python);
-        expect(editor.getGrammar().name).toBe('Python');
+        expect(editor.getGrammar().name).toBe("Python");
 
-        atom.commands.dispatch(workspaceElement,
-          'docblock-python:generate_docblock');
-        editor.setCursorBufferPosition({row: 0, column: 0});
+        atom.commands.dispatch(
+          workspaceElement,
+          "docblock-python:generate_docblock"
+        );
+        editor.setCursorBufferPosition({ row: 0, column: 0 });
 
         let query = getAllText(editor);
         expect(query.trim()).toBe(complex_doc.doc.trim());
@@ -196,15 +206,15 @@ describe('DocblockPython2', () => {
   });
 });
 
-xdescribe('DocblockPythonLint', () => {
+xdescribe("DocblockPythonLint", () => {
   // let workspaceElement;
   let editor;
 
   beforeEach(() => {
     workspaceElement = atom.views.getView(atom.workspace);
-    filePromise = atom.workspace.open('test.py');
-    activationPromise = atom.packages.activatePackage('linter');
-    activationPromise2 = atom.packages.activatePackage('docblock-python');
+    filePromise = atom.workspace.open("test.py");
+    activationPromise = atom.packages.activatePackage("linter");
+    activationPromise2 = atom.packages.activatePackage("docblock-python");
 
     waitsForPromise(() => {
       return filePromise;
@@ -219,57 +229,59 @@ xdescribe('DocblockPythonLint', () => {
     });
 
     waitsForPromise(() => {
-      return atom.packages.activatePackage('language-python') ||
-      atom.packages.activatePackage('MagicPython');
+      return (
+        atom.packages.activatePackage("language-python") ||
+        atom.packages.activatePackage("MagicPython")
+      );
     });
   });
 
-  it('adds a lint warning', () => {
+  it("adds a lint warning", () => {
     editor = atom.workspace.getActiveTextEditor();
-    expect(atom.config.get('docblock-python.lint')).toBe(false);
-    atom.config.set('docblock-python.lint', true);
-    expect(atom.config.get('docblock-python.lint')).toBe(true);
+    expect(atom.config.get("docblock-python.lint")).toBe(false);
+    atom.config.set("docblock-python.lint", true);
+    expect(atom.config.get("docblock-python.lint")).toBe(true);
 
-    atom.commands.dispatch(workspaceElement,
-      'docblock-python:generate_docblock');
+    atom.commands.dispatch(
+      workspaceElement,
+      "docblock-python:generate_docblock"
+    );
 
-    let start_pos = {row: 5, column: 0};
-    editor.setCursorBufferPosition({row: 6, column: 0});
+    let start_pos = { row: 5, column: 0 };
+    editor.setCursorBufferPosition({ row: 6, column: 0 });
     editor.moveToEndOfLine();
     editor.selectToBufferPosition(start_pos);
     editor.delete();
 
-    let all_packs = atom.packages.getLoadedPackages()
-      .map((x) => {
-        return x.name;
-      });
-    expect(all_packs.indexOf('linter')).toBeGreaterThan(-1);
+    let all_packs = atom.packages.getLoadedPackages().map(x => {
+      return x.name;
+    });
+    expect(all_packs.indexOf("linter")).toBeGreaterThan(-1);
 
-    let pack = atom.packages.getLoadedPackages()
-      .filter((x) => {
-        return x.name === 'docblock-python';
-      })[0];
-    expect(pack.name).toBe('docblock-python');
+    let pack = atom.packages.getLoadedPackages().filter(x => {
+      return x.name === "docblock-python";
+    })[0];
+    expect(pack.name).toBe("docblock-python");
 
-    expect(editor.getText()).not.toContain('parameter1 :');
+    expect(editor.getText()).not.toContain("parameter1 :");
 
     LinterProvider = pack.mainModule.provideLinter();
-    LinterProvider.lint(editor).then((messages) => {
+    LinterProvider.lint(editor).then(messages => {
       expect(messages.length).toBe(1);
-      expect(messages[0].excerpt).toContain('parameter1');
+      expect(messages[0].excerpt).toContain("parameter1");
     });
   });
 });
 
-describe('DocblockPythonDataClass', () => {
+describe("DocblockPythonDataClass", () => {
   let workspaceElement;
   let activationPromise;
   let editor;
 
   beforeEach(() => {
     workspaceElement = atom.views.getView(atom.workspace);
-    activationPromise = atom.packages.activatePackage('docblock-python');
-    filePromise = atom.workspace.open('test_dataclass.py');
+    activationPromise = atom.packages.activatePackage("docblock-python");
+    filePromise = atom.workspace.open("test_dataclass.py");
 
     waitsForPromise(() => {
       return filePromise;
@@ -280,19 +292,21 @@ describe('DocblockPythonDataClass', () => {
     });
 
     waitsForPromise(() => {
-      return atom.packages.activatePackage('language-python')
-        || atom.packages.activatePackage('MagicPython');
+      return (
+        atom.packages.activatePackage("language-python") ||
+        atom.packages.activatePackage("MagicPython")
+      );
     });
   });
 
-  describe('when the Class is defined as a dataclass', () => {
-    it('inserts the docblock with default settings', () => {
+  describe("when the Class is defined as a dataclass", () => {
+    it("inserts the docblock with default settings", () => {
       runs(() => {
         let pos;
 
         jasmine.attachToDOM(workspaceElement);
         editor = atom.workspace.getActiveTextEditor();
-        expect(editor.getPath()).toContain('test_dataclass.py');
+        expect(editor.getPath()).toContain("test_dataclass.py");
 
         editor.moveToBottom();
         pos = editor.getCursorBufferPosition();
@@ -300,8 +314,10 @@ describe('DocblockPythonDataClass', () => {
 
         editor.moveToTop();
         editor.moveDown(1);
-        atom.commands.dispatch(workspaceElement,
-          'docblock-python:generate_docblock');
+        atom.commands.dispatch(
+          workspaceElement,
+          "docblock-python:generate_docblock"
+        );
 
         editor.moveDown(1);
         editor.moveToBeginningOfLine();
@@ -313,12 +329,12 @@ describe('DocblockPythonDataClass', () => {
 
         expect(query.trim().slice(0, 3)).toBe('"""');
         expect(query.trim().slice(-3)).toBe('"""');
-        expect(query).toContain('a : str');
-        expect(query).toContain('b : float');
-        expect(query).toContain('c : int');
-        expect(query).toContain('z : type');
-        expect(query).toContain('Parameters');
-        expect(query).toContain('Attributes');
+        expect(query).toContain("a : str");
+        expect(query).toContain("b : float");
+        expect(query).toContain("c : int");
+        expect(query).toContain("z : type");
+        expect(query).toContain("Parameters");
+        expect(query).toContain("Attributes");
       });
     });
   });

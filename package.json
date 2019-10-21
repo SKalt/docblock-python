@@ -27,7 +27,10 @@
   },
   "devDependencies": {
     "eslint": "^5.0.1",
-    "eslint-config-google": "^0.9.1"
+    "eslint-config-google": "^0.9.1",
+    "eslint-config-prettier": "^6.4.0",
+    "eslint-plugin-prettier": "^3.1.1",
+    "prettier": "^1.18.2"
   },
   "package-deps": [
     "linter"

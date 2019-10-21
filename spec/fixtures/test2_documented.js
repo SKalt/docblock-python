@@ -1,4 +1,4 @@
-'use babel';
+"use babel";
 
 export default complex_doc = {
   doc: `class Test:
@@ -72,5 +72,5 @@ export default complex_doc = {
             """
             return n ** p
 
-        return pow(first, 2)`,
+        return pow(first, 2)`
 };
