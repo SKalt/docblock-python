@@ -1,6 +1,4 @@
-"use babel";
-
-export default templates = {
+const templates = {
   numpy: {
     summary: ["", '"""Short summary.\n'],
     parameters: ["\n", "Parameters\n", "----------\n"],
@@ -87,3 +85,4 @@ export default templates = {
     end: ["\n", '"""\n']
   }
 };
+export default templates;

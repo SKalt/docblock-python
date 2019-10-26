@@ -3,7 +3,7 @@
 
 import { CompositeDisposable } from "atom";
 import packageConfig from "./config.json";
-import templates from "./templates.js";
+import templates from "./templates";
 import {
   formatLint,
   lint_def,
@@ -11,9 +11,8 @@ import {
   get_missing_attr,
   lint_docblocks,
   getStyledParam
-} from "./linter-docblock-python.js";
-import { isPython } from "./utils.js";
-
+} from "./linter-docblock-python";
+import { isPython, withEditor } from "./utils";
 const main = {
   config: packageConfig,
   options: {},
@@ -33,20 +32,16 @@ const main = {
 };
 
 function get_header(start, lines, accum = "") {
-  let editor;
-  let query;
-  if ((editor = atom.workspace.getActiveTextEditor())) {
-    query = accum + "\n" + editor.lineTextForBufferRow(start.row + lines);
-    query = query.trim();
-    // editor.setCursorBufferPosition(start);
-    // editor.moveDown(lines);
-    // editor.moveToEndOfLine();
-    // editor.selectToBufferPosition(start);
-    // query = editor.getSelectedText().trim();
+  return withEditor(editor => {
+    let query = (
+      accum +
+      "\n" +
+      editor.lineTextForBufferRow(start.row + lines)
+    ).trim();
     if (!/:$/.test(query)) {
       // Handle one-line functions that return something
       if (query.includes("return") || query.endsWith("...")) {
-        this.options.tabs = this.options.tabs.slice(that.options.tab_length);
+        this.options.tabs = this.options.tabs.slice(this.options.tab_length);
         return [query, lines];
       }
       if (start.row + lines <= editor.getLineCount() - 2) {
@@ -54,12 +49,13 @@ function get_header(start, lines, accum = "") {
         if (!tmp) return null;
         query = tmp[0];
         lines = tmp[1];
+        return null;
       } else {
         return null;
       }
     }
-  }
-  return [query, lines];
+    return [query, lines];
+  });
 }
 
 function numpy({
@@ -243,7 +239,7 @@ function activate(state) {
 }
 
 function provideLinter() {
-  that = this;
+  let that = this;
   return {
     name: "docblock-python",
     scope: "file", // or 'project'
@@ -275,7 +271,7 @@ function serialize() {
   return {};
 }
 
-function extract_parameters(query) {
+export function extract_parameters(query) {
   let args = /\((.|\r|\n)*\)/.exec(query);
   if (args === null) {
     return { parameters: [] };
@@ -348,11 +344,11 @@ function generate_docblock() {
   const style = get("style");
   const template = templates[style];
 
-  const as_template = function(string) {
-    if (string.match(/\${/)) {
-      string = eval("`" + string.replace(/`/g, "\\`") + "`");
+  const as_template = function(x: string) {
+    if (x.match(/\$\{/)) {
+      x = eval("`" + x.replace(/`/g, "\\`") + "`");
     }
-    return string;
+    return x;
   };
 
   // Check for template strings
@@ -387,7 +383,7 @@ function generate_docblock() {
       let poss = editor.getCursorBufferPositions();
       let poss_ = [];
       let rows_ = [];
-      for (p in poss) {
+      for (let p in poss) {
         if (!rows_.includes(poss[p].row)) {
           rows_.push(poss[p].row);
           poss_.push(poss[p]);
@@ -395,8 +391,8 @@ function generate_docblock() {
       }
       poss = poss_.sort((a, b) => b.row - a.row);
 
-      that = this;
-      failed = 0;
+      let that = this;
+      let failed = 0;
       poss.map(pos => {
         editor.setCursorBufferPosition(pos);
         editor.moveToFirstCharacterOfLine();
@@ -566,11 +562,11 @@ function process_def(query, options) {
   let tabs = options.tabs;
   let template = JSON.parse(JSON.stringify(options.template));
 
-  let params = this.extract_parameters(query);
+  let params = extract_parameters(query);
   let lines = that.format_lines(params, options, "parameter").join("\n") + "\n";
   lines = template.parameters.join(tabs) + lines;
 
-  docblock = template.summary.join(tabs);
+  let docblock = template.summary.join(tabs);
   if (options.parameters && params.parameters.length > 0) {
     if (lines) docblock += lines;
   }
@@ -607,7 +603,7 @@ function find_init(start, lines = 0, accum = "") {
       if (logic) {
         return null;
       } else {
-        tmp = this.find_init(start, lines + 1, query);
+        let tmp = this.find_init(start, lines + 1, query);
         lines = tmp;
       }
     } else {
@@ -627,7 +623,7 @@ function find_init(start, lines = 0, accum = "") {
   return lines;
 }
 
-function find_init2(start, lines = 0, accum = "") {
+export function find_init2(start, lines = 0, accum = "") {
   let editor;
   let done;
   let indent = 0;
@@ -641,12 +637,12 @@ function find_init2(start, lines = 0, accum = "") {
       if (logic) {
         return null;
       } else {
-        tmp = this.find_init2(start, lines + 1, query);
+        let tmp = this.find_init2(start, lines + 1, query);
         lines = tmp;
       }
     } else {
-      ind_regex = new RegExp(that.options.tab_type, "g");
-      def_line = query.match(".*def __init__.*")[0];
+      let ind_regex = new RegExp(this.options.tab_type, "g");
+      let def_line = query.match(".*def __init__.*")[0];
       indent = def_line.match(ind_regex).length;
       done = true;
     }
@@ -655,29 +651,20 @@ function find_init2(start, lines = 0, accum = "") {
   if (done) {
     let pos = JSON.parse(JSON.stringify(start));
     pos.row = pos.row + lines;
-    pos.column = pos.column + indent * that.options.tab_length;
+    pos.column = pos.column + indent * this.options.tab_length;
     return pos;
   }
 
   return lines;
 }
 
-function get_init(start, lines = 0, accum = "") {
+export function get_init(start, lines = 0, accum = "") {
   let editor;
   let n_tabs = start.column / this.options.tab_length;
   if ((editor = atom.workspace.getActiveTextEditor())) {
     let last_line = editor.lineTextForBufferRow(start.row + lines);
     let query = accum + "\n" + last_line;
     query = query.trim();
-    // editor.setCursorBufferPosition(start);
-    // editor.moveDown(lines);
-    // editor.moveToEndOfLine();
-    // editor.selectToBeginningOfLine();
-    // let last_line = editor.getSelectedText();
-    // editor.moveToEndOfLine();
-    // editor.selectToBufferPosition(start);
-    // let query = editor.getSelectedText();
-    // let re = new RegExp(this.options.tabs, 'g');
     let re = new RegExp(this.options.tab_type, "g");
     if (!last_line.match(re) && last_line.length) {
       return query;
@@ -699,8 +686,7 @@ function get_init(start, lines = 0, accum = "") {
       if (logic) {
         return query;
       } else {
-        tmp = this.get_init(start, lines + 1, query);
-        lines = tmp;
+        lines = get_init(start, lines + 1, query);
       }
     } else {
       return query;
@@ -801,7 +787,7 @@ function process_class(query, options, pos) {
     params = params[0].map((e, i) => {
       return [e, params[1][i], params[2][i]];
     });
-    params_dict = {
+    let params_dict = {
       parameters: params[0],
       types: params[1],
       defaults: params[2]
@@ -809,14 +795,14 @@ function process_class(query, options, pos) {
     let lines =
       format_lines(params_dict, options, "parameter").join("\n") + "\n";
     lines = template.parameters.join(tabs) + lines;
-    docblock = template.summary.join(tabs);
+    let docblock = template.summary.join(tabs);
     if (options.parameters && lines) {
       docblock += lines;
     }
     if (attributes.length) {
       let attrs_text = template.attributes.join(tabs);
       let that = this;
-      attrs = process_list(attributes, options, that, "attribute");
+      let attrs = process_list(attributes, options, that, "attribute");
       // let attrs = format_lines(args_, options, label)
       //   .join('\n') + '\n';
       if (attrs.length > 1) {
@@ -846,7 +832,7 @@ function process_class(query, options, pos) {
 
   init_pos.row = init_pos.row + 1 + n_lines;
 
-  docblock = start;
+  let docblock = start;
 
   let attributes = this.get_init(init_pos, 0);
   attributes = attributes.match(/self.\w+/g);
@@ -867,7 +853,7 @@ function process_class(query, options, pos) {
     let attrs_text = template.attributes.join(tabs);
     if (long_attrs.length) {
       let that = this;
-      attrs = this.process_list(long_attrs, options, that, "attribute");
+      let attrs = this.process_list(long_attrs, options, that, "attribute");
       if (attrs.length > 1) {
         attrs_text += attrs;
       }
@@ -906,9 +892,7 @@ function scan_up(start, lines) {
       if (logic) {
         return null;
       } else {
-        tmp = this.scan_up(start, lines + 1);
-        query = tmp[0];
-        lines = tmp[1];
+        [query, lines] = scan_up(start, lines + 1);
       }
     }
   }
@@ -928,7 +912,7 @@ function scan_down(start, lines) {
       let logic = this.stop_words.map(x => query.search(x)).some(x => x >= 0);
 
       if (logic) return null;
-      tmp = this.scan_down(start, lines + 1);
+      let tmp = this.scan_down(start, lines + 1);
       query = tmp[0];
       lines = tmp[1];
     }
@@ -949,17 +933,18 @@ function get_docblock() {
     let pos_for_down = editor.getCursorBufferPosition();
     let text_down = this.scan_down(pos_for_down, 0);
     if (text_up !== null && text_down !== null) {
-      lines_up = text_up[0].split("\n");
-      lines_down = text_down[0].split("\n").slice(1);
+      let lines_up = text_up[0].split("\n");
+      let lines_down = text_down[0].split("\n").slice(1);
       return lines_up.join("\n") + lines_down.join("\n");
     }
   }
 }
 
-function get_def(start, direction) {
+export function get_def(start, direction) {
   let query;
   let def;
-  if ((editor = atom.workspace.getActiveTextEditor())) {
+  let editor = atom.workspace.getActiveTextEditor();
+  if (editor) {
     if (start.row < 0) {
       return {};
     }
@@ -997,7 +982,7 @@ function get_def(start, direction) {
   }
 }
 
-function get_all_docblocks() {
+export function get_all_docblocks() {
   let editor;
   if ((editor = atom.workspace.getActiveTextEditor())) {
     let allText = editor.getText();

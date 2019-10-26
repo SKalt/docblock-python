@@ -26,17 +26,24 @@
     "atom-package-deps": "^4.0.1"
   },
   "devDependencies": {
+    "@types/atom": "^1.36.1",
     "eslint": "^5.0.1",
     "eslint-config-google": "^0.9.1",
     "eslint-config-prettier": "^6.4.0",
     "eslint-plugin-prettier": "^3.1.1",
-    "prettier": "^1.18.2"
+    "prettier": "^1.18.2",
+    "rollup": "^1.25.1",
+    "rollup-plugin-json": "^4.0.0",
+    "rollup-plugin-typescript": "^1.0.1",
+    "tslib": "^1.10.0",
+    "typescript": "^3.6.4"
   },
   "package-deps": [
     "linter"
   ],
   "scripts": {
-    "lint": "eslint ./spec/ ./lib/",
+    "build": "rollup -c",
+    "lint": "eslint ./spec/",
     "pretest": "npm run lint",
     "test": "atom --test ./spec/"
   }

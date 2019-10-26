@@ -1,9 +1,12 @@
-"use babel";
 /* eslint-disable require-jsdoc, no-invalid-this*/
 
-import { get_all_docblocks } from "./docblock-python.js";
-
-this.get_all_docblocks = get_all_docblocks;
+import {
+  get_all_docblocks,
+  find_init2,
+  get_init,
+  get_def,
+  extract_parameters
+} from "./docblock-python";
 
 function formatLint(msg_pos, par_name, par_type, editorPath) {
   let type_text;
@@ -44,19 +47,18 @@ function getStyledParam(par) {
 }
 
 function lint_def(block) {
-  let params = that.extract_parameters(block.def);
+  let params = extract_parameters(block.def);
   let missing = [];
   let to_match;
   params.parameters.map(par => {
     to_match = getStyledParam(par).replace("*", "\\*");
-    match = block.docblock.match(to_match);
+    let match = block.docblock.match(to_match);
     if (match) {
     } else {
-      regex_pattern = `${par}(?=(,|:|=|\\)))`;
+      let regex_pattern = `${par}(?=(,|:|=|\\)))`;
       regex_pattern = regex_pattern.replace("*", "\\*");
-      par_regex = new RegExp(regex_pattern);
-      pos_in_def = block.def.match(par_regex).index;
-      par_pos = JSON.parse(JSON.stringify(block.def_pos));
+      let par_regex = new RegExp(regex_pattern);
+      let par_pos = JSON.parse(JSON.stringify(block.def_pos));
       let par_row_offset = 0;
       let par_indent = block.def_pos.column;
       let par_col = block.def.match(par_regex).index + par_indent;
@@ -70,7 +72,7 @@ function lint_def(block) {
       }
       par_pos.row = par_pos.row + par_row_offset;
       par_pos.column = par_col;
-      par_pos_end = JSON.parse(JSON.stringify(par_pos));
+      let par_pos_end = JSON.parse(JSON.stringify(par_pos));
       par_pos_end.column = par_pos_end.column + par.length;
       let data = { pos: [par_pos, par_pos_end], par: par, type: "par" };
       missing.push(data);
@@ -80,15 +82,16 @@ function lint_def(block) {
 }
 
 function get_class_init(block) {
-  if ((editor = atom.workspace.getActiveTextEditor())) {
-    let init_pos = that.find_init2(block.pos_end);
-    let attributes = that.get_init(init_pos);
+  let editor = atom.workspace.getActiveTextEditor();
+  if (editor) {
+    let init_pos = find_init2(block.pos_end);
+    let attributes = get_init(init_pos);
     attributes = attributes.match(/self.\w+/g);
     if (!attributes) {
       attributes = [];
     }
     attributes = attributes.map(x => x.replace("self.", ""));
-    let init_def = that.get_def(init_pos, 0);
+    let init_def = get_def(init_pos, 0);
     if (Object.keys(init_def).length === 0) {
       return {};
     }
@@ -102,10 +105,11 @@ function get_class_init(block) {
 }
 
 function get_missing_attr(block) {
-  if ((editor = atom.workspace.getActiveTextEditor())) {
-    let init_pos = that.find_init2(block.pos_end);
+  let editor = atom.workspace.getActiveTextEditor();
+  if (editor) {
+    let init_pos = find_init2(block.pos_end);
     init_pos.row = init_pos.row + 1;
-    let attributes = that.get_init(init_pos);
+    let attributes = get_init(init_pos);
     attributes = attributes.match(/self.\w+/g);
     if (!attributes) {
       attributes = [];
@@ -116,17 +120,18 @@ function get_missing_attr(block) {
     let to_match;
     attributes.map(par => {
       to_match = getStyledParam(par);
-      match = block.docblock.match(to_match);
+      let match = block.docblock.match(to_match);
       if (match) {
       } else {
-        attr_regex = new RegExp(`self.${par}`);
+        let attr_regex = new RegExp(`self.${par}`);
 
-        let init_pos = that.find_init2(block.pos_end);
+        let init_pos = find_init2(block.pos_end);
         init_pos.row = init_pos.row + 1;
         let finding_line = true;
         let i = 0;
+        let last_match;
         while (finding_line) {
-          line_text = editor.lineTextForBufferRow(init_pos.row + i);
+          let line_text = editor.lineTextForBufferRow(init_pos.row + i);
           last_match = line_text.match(attr_regex);
           if (last_match) {
             finding_line = false;
@@ -134,11 +139,11 @@ function get_missing_attr(block) {
             i = i + 1;
           }
         }
-        par_pos = {
+        let par_pos = {
           row: init_pos.row + i,
           column: last_match.index + 5
         };
-        par_pos_end = {
+        let par_pos_end = {
           row: init_pos.row + i,
           column: last_match.index + 5 + par.length
         };
@@ -155,20 +160,21 @@ function lint_docblocks() {
   if (!lint_enabled) {
     return [];
   }
-  if ((editor = atom.workspace.getActiveTextEditor())) {
-    let allBlocks = this.get_all_docblocks();
+  let editor = atom.workspace.getActiveTextEditor();
+  if (editor) {
+    let allBlocks = get_all_docblocks();
     let missing_par = [];
     if (allBlocks.length > 0) {
       let that = this;
       allBlocks.map(x => {
         if (x.def.match("class")) {
-          let class_init = that.get_class_init(x);
-          if (Object.keys(class_init).length === 0) {
+          let class_init = get_class_init(x);
+          if (Object.keys(class_init || {}).length === 0) {
             return;
           }
           let data = that.lint_def(class_init);
           missing_par.push(data);
-          data = that.get_missing_attr(x);
+          data = get_missing_attr(x);
           missing_par.push(data);
         } else {
           let data = that.lint_def(x);
@@ -180,7 +186,7 @@ function lint_docblocks() {
   }
 }
 
-export default {
+export {
   formatLint,
   lint_def,
   get_class_init,
